@@ -19,9 +19,9 @@ pragma solidity 0.8.6;
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  **/
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./ERC20Mock.sol";
 
-contract WETHMock is ERC20("WETH", "Wrapped Ether") {
+contract WETHMock is ERC20Mock("WETH", "Wrapped Ether", 18) {
     function deposit() external payable {
         _mint(msg.sender, msg.value);
     }

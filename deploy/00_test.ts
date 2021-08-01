@@ -67,7 +67,7 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     args: [HEGIC.address, WETH.address, "WBTC Staking", "WETH S"],
   })
 
-  const USDCStaking = await deploy("WETHStaking", {
+  const USDCStaking = await deploy("USDCStaking", {
     contract: "HegicStaking",
     from: deployer,
     log: true,

@@ -20,9 +20,9 @@ pragma solidity 0.8.6;
  **/
 
 import "../Interfaces/Interfaces.sol";
-import "./HegicPoolAccess.sol";
 import "../Interfaces/IOptionsManager.sol";
 import "../Interfaces/Interfaces.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @author 0mllwntrmt3
@@ -33,7 +33,7 @@ import "../Interfaces/Interfaces.sol";
  * exercises the ITM (in-the-money) options with the unrealized P&L and settles them,
  * unlocks the expired options and distributes the premiums among the liquidity providers.
  **/
-abstract contract HegicPool is IHegicPool, ERC721, HegicPoolAccess {
+abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
     using SafeERC20 for IERC20;
 
     uint256 public constant INITIAL_RATE = 1e20;
@@ -69,6 +69,7 @@ abstract contract HegicPool is IHegicPool, ERC721, HegicPoolAccess {
         IHegicStaking _settlementFeeRecipient,
         AggregatorV3Interface _priceProvider
     ) ERC721(name, symbol) {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         priceProvider = _priceProvider;
         settlementFeeRecipient = _settlementFeeRecipient;
         pricer = _pricer;

@@ -61,7 +61,7 @@ const config: HardhatUserConfig = {
       url: "http://127.0.0.1:8555",
     },
     hlocal: {
-      url: "http://localhost:8545",
+      url: "http://127.0.0.1:8545",
       accounts: {
         mnemonic:
           "myth like bonus scare over problem client lizard pioneer submit female collect", // well known symbolic

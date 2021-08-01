@@ -270,7 +270,7 @@ interface IHegicStaking {
     event MicroLotsAcquired(address indexed account, uint256 amount);
     event MicroLotsSold(address indexed account, uint256 amount);
 
-    function claimProfits() external returns (uint256 profit);
+    function claimProfits(address account) external returns (uint256 profit);
 
     function buyStakingLot(uint256 amount) external;
 

@@ -196,6 +196,17 @@ contract Facade is Ownable {
         return forwarder == _trustedForwarder;
     }
 
+    function claimAllStakingProfits(
+        IHegicStaking[] calldata stakings,
+        address account
+    ) external {
+        uint256 arrayLength = stakings.length;
+        for (uint256 i = 0; i < arrayLength; i++) {
+            IHegicStaking s = stakings[i];
+            if (s.profitOf(account) > 0) s.claimProfits(account);
+        }
+    }
+
     function _msgSender() internal view override returns (address signer) {
         signer = msg.sender;
         if (msg.data.length >= 20 && isTrustedForwarder(signer)) {

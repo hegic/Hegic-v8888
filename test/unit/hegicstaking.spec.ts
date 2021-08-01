@@ -70,7 +70,7 @@ describe("HegicStaking", async () => {
   describe("claimProfits", () => {
     it("revert if there is zero profit", async () => {
       await expect(
-        hegicStaking.connect(alice).claimProfits(),
+        hegicStaking.claimProfits(await alice.getAddress()),
       ).to.be.revertedWith("Zero profit")
     })
     it("should allow Bob to claim profits", async () => {
@@ -82,7 +82,7 @@ describe("HegicStaking", async () => {
         await bob.getAddress(),
       )
       expect(fakeWBTCBalanceBefore).to.be.eq(BN.from(0))
-      await hegicStaking.connect(bob).claimProfits()
+      await hegicStaking.claimProfits(await bob.getAddress())
       const fakeWBTCBalanceAfter = await fakeWBTC.balanceOf(
         await bob.getAddress(),
       )

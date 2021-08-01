@@ -80,13 +80,17 @@ contract HegicStaking is ERC20, IHegicStaking {
      * or staking lots holders for claiming
      * the accumulated staking rewards.
      **/
-    function claimProfits() external override returns (uint256 profit) {
-        saveProfits(msg.sender);
-        profit = savedProfit[msg.sender];
+    function claimProfits(address account)
+        external
+        override
+        returns (uint256 profit)
+    {
+        saveProfits(account);
+        profit = savedProfit[account];
         require(profit > 0, "Zero profit");
-        savedProfit[msg.sender] = 0;
-        _transferProfits(profit);
-        emit Claim(msg.sender, profit);
+        savedProfit[account] = 0;
+        token.safeTransfer(account, profit);
+        emit Claim(account, profit);
     }
 
     /**
@@ -238,10 +242,6 @@ contract HegicStaking is ERC20, IHegicStaking {
         } else {
             token.safeTransferFrom(msg.sender, FALLBACK_RECIPIENT, amount);
         }
-    }
-
-    function _transferProfits(uint256 amount) internal {
-        token.safeTransfer(msg.sender, amount);
     }
 
     modifier lockupFree {
