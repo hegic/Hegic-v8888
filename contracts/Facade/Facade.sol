@@ -130,17 +130,23 @@ contract Facade is Ownable {
      * @param period The option period
      * @param amount The option size
      * @param strike The option strike
+     * @param acceptablePrice The highest acceptable price
      **/
     function createOption(
         IHegicPool pool,
         uint256 period,
         uint256 amount,
         uint256 strike,
-        address[] calldata swappath
+        address[] calldata swappath,
+        uint256 acceptablePrice
     ) external payable {
         address buyer = _msgSender();
         (uint256 optionPrice, uint256 rawOptionPrice, , ) =
             getOptionPrice(pool, period, amount, strike, swappath);
+        require(
+            optionPrice <= acceptablePrice,
+            "Facade Error: The option price is too high"
+        );
         IERC20 paymentToken = IERC20(swappath[0]);
         paymentToken.safeTransferFrom(buyer, address(this), optionPrice);
         if (swappath.length > 1) {

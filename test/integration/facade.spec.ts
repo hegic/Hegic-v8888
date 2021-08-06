@@ -212,6 +212,7 @@ describe("Facade", async () => {
           ethers.utils.parseUnits("1"),
           2500e8,
           [USDC.address, WETH.address],
+          ethers.constants.MaxUint256,
         )
       await ethPriceFeed.setPrice(3000e8)
       await HegicATMCALL_WETH.connect(alice).exercise(0)
@@ -232,6 +233,7 @@ describe("Facade", async () => {
           ethers.utils.parseUnits("1"),
           2500e8,
           [USDC.address],
+          ethers.constants.MaxUint256,
         )
       await ethPriceFeed.setPrice(2000e8)
       await HegicATMPUT_WETH.connect(alice).exercise(0)
