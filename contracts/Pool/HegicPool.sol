@@ -380,6 +380,13 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
             "Pool Error: Depositing into the pool is not available"
         );
 
+        uint256 trancheID = tranches.length;
+        tranches.push(
+            Tranche(TrancheState.Open, share, amount, block.timestamp, hedged)
+        );
+        _safeMint(account, trancheID);
+        token.safeTransferFrom(_msgSender(), address(this), amount);
+
         if (hedged) {
             hedgedShare += share;
             hedgedBalance += amount;
@@ -387,13 +394,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
             unhedgedShare += share;
             unhedgedBalance += amount;
         }
-
-        uint256 trancheID = tranches.length;
-        tranches.push(
-            Tranche(TrancheState.Open, share, amount, block.timestamp, hedged)
-        );
-        _safeMint(account, trancheID);
-        token.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     /**
