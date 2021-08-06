@@ -59,6 +59,14 @@ contract PriceCalculator is IPriceCalculator, Ownable {
     }
 
     /**
+     * @notice Used for updating utilizationRate value
+     * @param value New utilizationRate value
+     **/
+    function setUtilizationRate(uint256 value) external onlyOwner {
+        utilizationRate = value;
+    }
+
+    /**
      * @notice Used for calculating the options prices
      * @param period The option period in seconds (1 days <= period <= 90 days)
      * @param amount The option size
