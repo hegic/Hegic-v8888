@@ -120,7 +120,7 @@ contract Facade is Ownable {
      * @notice Used for approving the pools contracts addresses.
      **/
     function poolApprove(IHegicPool pool) external {
-        pool.token().approve(address(pool), type(uint256).max);
+        pool.token().safeApprove(address(pool), type(uint256).max);
     }
 
     /**
