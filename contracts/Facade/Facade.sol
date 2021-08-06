@@ -153,7 +153,7 @@ contract Facade is Ownable {
             if (
                 paymentToken.allowance(address(this), address(exchange)) <
                 optionPrice
-            ) paymentToken.approve(address(exchange), type(uint256).max);
+            ) paymentToken.safeApprove(address(exchange), type(uint256).max);
 
             exchange.swapTokensForExactTokens(
                 rawOptionPrice,
