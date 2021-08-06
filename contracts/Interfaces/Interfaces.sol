@@ -276,7 +276,7 @@ interface IHegicStaking {
 
     function sellStakingLot(uint256 amount) external;
 
-    function sendProfits(uint256 amount) external;
+    function distributeUnrealizedRewards() external;
 
     function profitOf(address account) external view returns (uint256);
 }

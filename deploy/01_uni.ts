@@ -1,5 +1,4 @@
 import {HardhatRuntimeEnvironment} from "hardhat/types"
-import {UniswapV2Factory} from "../typechain/UniswapV2Factory"
 import {UniswapV2Pair} from "../typechain/UniswapV2Pair"
 import {WethMock} from "../typechain/WethMock"
 import {Erc20Mock} from "../typechain/Erc20Mock"
@@ -8,7 +7,7 @@ import {bytecode as UniswapV2FactoryBytecode} from "@uniswap/v2-core/build/Unisw
 
 async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   const {deployments, getNamedAccounts, ethers} = hre
-  const {deploy, execute, save} = deployments
+  const {deploy} = deployments
   const {deployer} = await getNamedAccounts()
 
   const WETH = (await ethers.getContract("WETH")) as WethMock

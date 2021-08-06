@@ -76,7 +76,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
         token = _token;
         hedgePool = _msgSender();
         optionsManager = manager;
-        approve();
     }
 
     /**
@@ -189,16 +188,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
     }
 
     /**
-     * @notice Used for approving the staking contracts
-     * to receive the `settlementFee` in ERC20 tokens
-     * that will be accumulated and distributed in
-     * staking rewards among the staking participants.
-     **/
-    function approve() public {
-        token.approve(address(settlementFeeRecipient), type(uint256).max);
-    }
-
-    /**
      * @notice Used for changing the hedging pool address
      * that will be accumulating the hedging premiums paid
      * as a share of the total premium redirected to this address.
@@ -267,8 +256,8 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
             address(this),
             premium + settlementFee
         );
-
-        settlementFeeRecipient.sendProfits(settlementFee);
+        token.safeTransfer(address(settlementFeeRecipient), settlementFee);
+        settlementFeeRecipient.distributeUnrealizedRewards();
         if (hedgeFee > 0) token.safeTransfer(hedgePool, hedgeFee);
         emit Acquired(id, settlementFee, premium);
     }

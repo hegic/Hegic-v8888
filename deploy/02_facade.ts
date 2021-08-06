@@ -6,11 +6,6 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   const {deployer} = await getNamedAccounts()
 
   const WETH = await get("WETH")
-  const WBTC = await get("WBTC")
-  const USDC = await get("USDC")
-
-  const WBTCPriceProvider = await get("WBTCPriceProvider")
-  const ETHPriceProvider = await get("ETHPriceProvider")
 
   const uniswapRouter = await get("UniswapRouter")
 
@@ -19,7 +14,7 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     args: [
       WETH.address,
       uniswapRouter.address,
-      "0x0000000000000000000000000000000000000000",
+      "0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB",
     ],
   })
 
@@ -52,5 +47,5 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   )
 }
 
-deployment.tags = ["test"]
+deployment.tags = ["test", "facade"]
 export default deployment

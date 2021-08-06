@@ -44,10 +44,6 @@ describe("HegicStaking", async () => {
     await fakeHegic
       .connect(bob)
       .approve(hegicStaking.address, ethers.constants.MaxUint256)
-
-    await fakeWBTC
-      .connect(alice)
-      .approve(hegicStaking.address, ethers.constants.MaxUint256)
   })
 
   describe("constructor & settings", () => {
@@ -56,9 +52,6 @@ describe("HegicStaking", async () => {
       expect(await hegicStaking.token()).to.be.eq(fakeWBTC.address)
       expect(await hegicStaking.STAKING_LOT_PRICE()).to.be.eq(
         ethers.utils.parseUnits("888000", await fakeHegic.decimals()),
-      )
-      expect(await hegicStaking.FALLBACK_RECIPIENT()).to.be.eq(
-        await deployer.getAddress(),
       )
       expect(await hegicStaking.totalProfit()).to.be.eq(BN.from(0))
       expect(await hegicStaking.lockupPeriod()).to.be.eq(BN.from(86400))
@@ -77,7 +70,8 @@ describe("HegicStaking", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyStakingLot(BN.from(1))
       await hegicStaking.connect(bob).buyStakingLot(BN.from(1))
-      await hegicStaking.connect(alice).sendProfits(amount)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       const fakeWBTCBalanceBefore = await fakeWBTC.balanceOf(
         await bob.getAddress(),
       )
@@ -169,7 +163,8 @@ describe("HegicStaking", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyStakingLot(BN.from(1))
       await hegicStaking.connect(bob).buyStakingLot(BN.from(1))
-      await hegicStaking.connect(alice).sendProfits(amount)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       const profit = await hegicStaking
         .connect(alice)
         .profitOf(await alice.getAddress())
@@ -178,7 +173,7 @@ describe("HegicStaking", async () => {
       )
     })
   })
-  describe("sendProfit", () => {
+  describe("distributeUnrealizedRewards", () => {
     it("should allow another account to send profit", async () => {
       await hegicStaking.connect(alice).buyStakingLot(BN.from(1))
       const fakeWBTCBalanceBefore = await fakeWBTC.balanceOf(
@@ -187,11 +182,14 @@ describe("HegicStaking", async () => {
       expect(fakeWBTCBalanceBefore).to.be.eq(
         ethers.utils.parseUnits("10000", await fakeWBTC.decimals()),
       )
-      await hegicStaking
+      await fakeWBTC
         .connect(alice)
-        .sendProfits(
+        .transfer(
+          hegicStaking.address,
           ethers.utils.parseUnits("10000", await fakeWBTC.decimals()),
         )
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
+
       const fakeWBTCBalanceAfter = await fakeWBTC.balanceOf(
         await alice.getAddress(),
       )
@@ -203,11 +201,14 @@ describe("HegicStaking", async () => {
         hegicStaking.address,
       )
       expect(fakeWBTCBalanceBefore).to.be.eq(BN.from(0))
-      await hegicStaking
+      await fakeWBTC
         .connect(alice)
-        .sendProfits(
+        .transfer(
+          hegicStaking.address,
           ethers.utils.parseUnits("10000", await fakeWBTC.decimals()),
         )
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
+
       const fakeWBTCBalanceAfter = await fakeWBTC.balanceOf(
         hegicStaking.address,
       )
@@ -218,7 +219,8 @@ describe("HegicStaking", async () => {
     it("should send all to basic lots if there are no micro lots", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyStakingLot(1)
-      await hegicStaking.connect(alice).sendProfits(amount)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       expect(await hegicStaking.profitOf(await alice.getAddress())).to.be.eq(
         amount,
       )
@@ -226,32 +228,38 @@ describe("HegicStaking", async () => {
     it("should send all to micro lots if there are no basic lots", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyMicroLot("1000")
-      await hegicStaking.connect(alice).sendProfits(amount)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       expect(await hegicStaking.profitOf(await alice.getAddress())).to.be.eq(
         amount,
       )
     })
     it("should send all to FALLBACK RECIPIENT if there are no any lots", async () => {
-      const fakeWBTCBalanceBefore = await fakeWBTC.balanceOf(
-        await deployer.getAddress(),
-      )
-      expect(fakeWBTCBalanceBefore).to.be.eq(BN.from(0))
-      await hegicStaking
+      const totalProfitBefore = await hegicStaking.totalProfit()
+      expect(totalProfitBefore).to.be.eq(BN.from(0))
+      const microLotsProfitsBefore = await hegicStaking.microLotsProfits()
+      expect(microLotsProfitsBefore).to.be.eq(BN.from(0))
+      await fakeWBTC
         .connect(alice)
-        .sendProfits(
+        .transfer(
+          hegicStaking.address,
           ethers.utils.parseUnits("10000", await fakeWBTC.decimals()),
         )
-      const fakeWBTCBalanceAfter = await fakeWBTC.balanceOf(
-        await deployer.getAddress(),
-      )
-      expect(fakeWBTCBalanceAfter).to.be.eq(
-        ethers.utils.parseUnits("10000", await fakeWBTC.decimals()),
-      )
+      await expect(
+        hegicStaking.connect(alice).distributeUnrealizedRewards(),
+      ).not.to.emit(hegicStaking, "Profit")
+      const totalProfitAfter = await hegicStaking.totalProfit()
+      expect(totalProfitAfter).to.be.eq(totalProfitBefore).to.be.eq(BN.from(0))
+      const microLotsProfitsAfter = await hegicStaking.microLotsProfits()
+      expect(microLotsProfitsAfter)
+        .to.be.eq(microLotsProfitsBefore)
+        .to.be.eq(BN.from(0))
     })
     it("should emit a Profit event", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyStakingLot(BN.from(1))
-      await expect(hegicStaking.connect(alice).sendProfits(amount))
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await expect(hegicStaking.connect(alice).distributeUnrealizedRewards())
         .to.emit(hegicStaking, "Profit")
         .withArgs(amount)
     })
@@ -259,7 +267,8 @@ describe("HegicStaking", async () => {
       const amount = ethers.utils.parseUnits("10000", await fakeWBTC.decimals())
       await hegicStaking.connect(alice).buyStakingLot(BN.from(1))
       await hegicStaking.connect(bob).buyStakingLot(BN.from(1))
-      await hegicStaking.connect(alice).sendProfits(amount)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, amount)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       expect(await hegicStaking.totalProfit()).to.be.eq(
         amount.mul(BN.from(10).pow(30)).div(2),
       )
@@ -267,7 +276,8 @@ describe("HegicStaking", async () => {
     it("should send 20% of profit to microlots", async () => {
       await hegicStaking.connect(alice).buyMicroLot(1000)
       await hegicStaking.connect(bob).buyStakingLot(1)
-      await hegicStaking.connect(alice).sendProfits(100000)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, 100000)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       expect(await hegicStaking.profitOf(await alice.getAddress())).to.be.eq(
         20000,
       )
@@ -275,7 +285,8 @@ describe("HegicStaking", async () => {
     it("should send 80% of profit to lots", async () => {
       await hegicStaking.connect(alice).buyMicroLot(1000)
       await hegicStaking.connect(bob).buyStakingLot(1)
-      await hegicStaking.connect(alice).sendProfits(100000)
+      await fakeWBTC.connect(alice).transfer(hegicStaking.address, 100000)
+      await hegicStaking.connect(alice).distributeUnrealizedRewards()
       expect(await hegicStaking.profitOf(await bob.getAddress())).to.be.eq(
         80000,
       )
@@ -302,8 +313,9 @@ describe("HegicStaking", async () => {
       await hegicStaking
         .connect(bob)
         .buyMicroLot(ethers.utils.parseUnits("100"))
-      await hegicStaking.connect(deployer).sendProfits(100000)
 
+      await fakeWBTC.connect(deployer).transfer(hegicStaking.address, 100000)
+      await hegicStaking.connect(deployer).distributeUnrealizedRewards()
       // 10% from 20% from 100 000 = 0.1 * 0.2 * 100 000 = 2 000
       expect(await hegicStaking.profitOf(await bob.getAddress())).to.be.eq(2000)
       // 20% from 80% from 100 000 = 0.2 * 0.8 * 100 000 = 16 000

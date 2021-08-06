@@ -42,8 +42,7 @@ contract HegicStaking is ERC20, IHegicStaking {
 
     uint256 public constant STAKING_LOT_PRICE = 888_000e18;
     uint256 internal constant ACCURACY = 1e30;
-
-    address public immutable FALLBACK_RECIPIENT;
+    uint256 internal realisedBalance;
 
     uint256 public microLotsTotal = 0;
     mapping(address => uint256) public microBalance;
@@ -68,7 +67,6 @@ contract HegicStaking is ERC20, IHegicStaking {
     ) ERC20(name, short) {
         HEGIC = _hegic;
         token = _token;
-        FALLBACK_RECIPIENT = msg.sender;
     }
 
     function decimals() public pure override returns (uint8) {
@@ -89,6 +87,7 @@ contract HegicStaking is ERC20, IHegicStaking {
         profit = savedProfit[account];
         require(profit > 0, "Zero profit");
         savedProfit[account] = 0;
+        realisedBalance -= profit;
         token.safeTransfer(account, profit);
         emit Claim(account, profit);
     }
@@ -219,11 +218,12 @@ contract HegicStaking is ERC20, IHegicStaking {
     }
 
     /**
-     * @notice Used for sending the staking rewards (the settlement fees)
-     * into the staking contract for the future distribution
+     * @notice Used for distributing the staking rewards
      * among the microlots and staking lots holders.
      **/
-    function sendProfits(uint256 amount) external override {
+    function distributeUnrealizedRewards() external override {
+        uint256 amount = token.balanceOf(address(this)) - realisedBalance;
+        realisedBalance += amount;
         uint256 _totalSupply = totalSupply();
         if (microLotsTotal + _totalSupply > 0) {
             if (microLotsTotal == 0) {
@@ -236,11 +236,7 @@ contract HegicStaking is ERC20, IHegicStaking {
                 microLotsProfits += (microAmount * ACCURACY) / microLotsTotal;
                 totalProfit += (baseAmount * ACCURACY) / _totalSupply;
             }
-
-            token.safeTransferFrom(msg.sender, address(this), amount);
             emit Profit(amount);
-        } else {
-            token.safeTransferFrom(msg.sender, FALLBACK_RECIPIENT, amount);
         }
     }
 
