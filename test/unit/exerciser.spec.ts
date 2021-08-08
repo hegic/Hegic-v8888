@@ -77,7 +77,7 @@ describe("Exerciser", async () => {
     )
   })
 
-  describe.only("exercise", () => {
+  describe("exercise", () => {
     it("should exercise option", async () => {
       await facade.provideEthToPool(HegicATMCALL_WETH.address, true, 0, {
         value: ethers.utils.parseEther("10"),

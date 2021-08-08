@@ -117,7 +117,7 @@ contract HegicStaking is ERC20, IHegicStaking {
         saveProfits(msg.sender);
         microLotsTotal -= amount;
         microBalance[msg.sender] -= amount;
-        HEGIC.safeTransferFrom(msg.sender, address(this), amount);
+        HEGIC.safeTransfer(msg.sender, amount);
         emit MicroLotsSold(msg.sender, amount);
     }
 
