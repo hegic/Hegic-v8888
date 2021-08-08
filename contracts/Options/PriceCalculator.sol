@@ -87,7 +87,7 @@ contract PriceCalculator is IPriceCalculator, Ownable {
             strike == currentPrice,
             "Only ATM options are currently available"
         );
-        uint256 total = _calcualtePeriodFee(amount, period);
+        uint256 total = _calculatePeriodFee(amount, period);
         settlementFee = total / 5;
         premium = total - settlementFee;
     }
@@ -98,7 +98,7 @@ contract PriceCalculator is IPriceCalculator, Ownable {
      * @param period The option period in seconds (1 days <= period <= 90 days)
      * @return fee The premium size to be paid
      **/
-    function _calcualtePeriodFee(uint256 amount, uint256 period)
+    function _calculatePeriodFee(uint256 amount, uint256 period)
         internal
         view
         returns (uint256 fee)
