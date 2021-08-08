@@ -53,6 +53,12 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     log: true,
   })
 
+  const Exerciser = await deploy("Exerciser", {
+    from: deployer,
+    log: true,
+    args: [OptionsManager.address],
+  })
+
   const WBTCStaking = await deploy("WBTCStaking", {
     contract: "HegicStaking",
     from: deployer,

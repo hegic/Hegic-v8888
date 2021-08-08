@@ -6,11 +6,12 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   const {deployer} = await getNamedAccounts()
 
   const WETH = await get("WETH")
-
+  const OptionsManager = await get("OptionsManager")
   const uniswapRouter = await get("UniswapRouter")
 
   await deploy("Facade", {
     from: deployer,
+    log: true,
     args: [
       WETH.address,
       uniswapRouter.address,
@@ -20,32 +21,34 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWETHPUT")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWETHCALL")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWBTCPUT")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWBTCCALL")).address,
   )
 }
 
 deployment.tags = ["test", "facade"]
+deployment.dependencies = ["uni"]
+
 export default deployment

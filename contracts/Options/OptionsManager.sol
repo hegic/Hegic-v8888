@@ -38,7 +38,7 @@ contract OptionsManager is
 {
     bytes32 public constant HEGIC_POOL_ROLE = keccak256("HEGIC_POOL_ROLE");
     uint256 public nextTokenId = 0;
-    mapping(uint256 => address) public tokenPool;
+    mapping(uint256 => address) public override tokenPool;
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);

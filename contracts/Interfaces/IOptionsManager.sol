@@ -33,6 +33,11 @@ interface IOptionsManager is IERC721 {
     function createOptionFor(address holder) external returns (uint256);
 
     /**
+     * @param tokenId The ERC721 token ID linked to the option
+     **/
+    function tokenPool(uint256 tokenId) external returns (address pool);
+
+    /**
      * @param spender The option buyer address or another address
      *   with the granted permission to buy/exercise options on the user's behalf
      * @param tokenId The ERC721 token ID linked to the option
