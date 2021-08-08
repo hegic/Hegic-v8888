@@ -120,6 +120,7 @@ contract Facade is Ownable {
      * @notice Used for approving the pools contracts addresses.
      **/
     function poolApprove(IHegicPool pool) external {
+        pool.token().safeApprove(address(pool), 0);
         pool.token().safeApprove(address(pool), type(uint256).max);
     }
 
@@ -153,7 +154,10 @@ contract Facade is Ownable {
             if (
                 paymentToken.allowance(address(this), address(exchange)) <
                 optionPrice
-            ) paymentToken.safeApprove(address(exchange), type(uint256).max);
+            ) {
+                paymentToken.safeApprove(address(exchange), 0);
+                paymentToken.safeApprove(address(exchange), type(uint256).max);
+            }
 
             exchange.swapTokensForExactTokens(
                 rawOptionPrice,
