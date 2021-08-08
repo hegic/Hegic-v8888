@@ -23,6 +23,7 @@ import "../Interfaces/Interfaces.sol";
 import "../Interfaces/IOptionsManager.sol";
 import "../Interfaces/Interfaces.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @author 0mllwntrmt3
@@ -33,7 +34,12 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * exercises the ITM (in-the-money) options with the unrealized P&L and settles them,
  * unlocks the expired options and distributes the premiums among the liquidity providers.
  **/
-abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
+abstract contract HegicPool is
+    IHegicPool,
+    ERC721,
+    AccessControl,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
 
     uint256 public constant INITIAL_RATE = 1e20;
@@ -363,7 +369,7 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
         uint256 amount,
         bool hedged,
         uint256 minShare
-    ) external override returns (uint256 share) {
+    ) external override nonReentrant returns (uint256 share) {
         uint256 totalShare = hedged ? hedgedShare : unhedgedShare;
         uint256 balance = hedged ? hedgedBalance : unhedgedBalance;
         share = totalShare > 0 && balance > 0
