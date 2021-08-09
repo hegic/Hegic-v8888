@@ -114,7 +114,7 @@ contract HegicStaking is ERC20, IHegicStaking {
      * @notice Used for unstaking the HEGIC tokens
      * in the form of selling the microlot.
      **/
-    function sellMicroLot(uint256 amount) external lockupFree {
+    function sellMicroLot(uint256 amount) external {
         require(amount > 0, "Amount is zero");
         require(
             lastMicroBoughtTimestamp[msg.sender] + microLockupPeriod <
