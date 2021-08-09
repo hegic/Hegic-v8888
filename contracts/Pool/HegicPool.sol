@@ -413,6 +413,7 @@ abstract contract HegicPool is
     function withdraw(uint256 trancheID)
         external
         override
+        nonReentrant
         returns (uint256 amount)
     {
         address owner = ownerOf(trancheID);
@@ -438,6 +439,7 @@ abstract contract HegicPool is
     function withdrawWithoutHedge(uint256 trancheID)
         external
         override
+        nonReentrant
         returns (uint256 amount)
     {
         address owner = ownerOf(trancheID);
