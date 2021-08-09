@@ -20,6 +20,7 @@ pragma solidity 0.8.6;
  **/
 
 import "../Interfaces/Interfaces.sol";
+import "../Interfaces/IOptionsManager.sol";
 
 /**
  * @author 0mllwntrmt3
@@ -35,16 +36,19 @@ contract Facade is Ownable {
 
     IWETH public immutable WETH;
     IUniswapV2Router01 public immutable exchange;
+    IOptionsManager public immutable optionsManager;
     address public _trustedForwarder;
 
     constructor(
         IWETH weth,
         IUniswapV2Router01 router,
+        IOptionsManager manager,
         address trustedForwarder
     ) {
         WETH = weth;
         exchange = router;
         _trustedForwarder = trustedForwarder;
+        optionsManager = manager;
     }
 
     /**
@@ -224,5 +228,13 @@ contract Facade is Ownable {
                 signer := shr(96, calldataload(sub(calldatasize(), 20)))
             }
         }
+    }
+
+    function exercise(uint256 optionId) external {
+        require(
+            optionsManager.isApprovedOrOwner(_msgSender(), optionId),
+            "Facade Error: _msgSender is not eligible to exercise the option"
+        );
+        IHegicPool(optionsManager.tokenPool(optionId)).exercise(optionId);
     }
 }

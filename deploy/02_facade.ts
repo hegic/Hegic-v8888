@@ -15,6 +15,7 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     args: [
       WETH.address,
       uniswapRouter.address,
+      OptionsManager.address,
       "0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB",
     ],
   })

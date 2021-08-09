@@ -7,9 +7,10 @@ import {HegicPool} from "../../typechain/HegicPool"
 import {WethMock} from "../../typechain/WethMock"
 import {Erc20Mock as ERC20} from "../../typechain/Erc20Mock"
 import {AggregatorV3Interface} from "../../typechain/AggregatorV3Interface"
+import {OptionsManager} from "../../typechain/OptionsManager"
 
 chai.use(solidity)
-// const {expect} = chai
+const {expect} = chai
 const ONE_DAY = BN.from(86400)
 const optionType = {
   PUT: 1,
@@ -25,6 +26,7 @@ describe("Facade", async () => {
   let HegicATMCALL_WETH: HegicPool
   let HegicATMPUT_WETH: HegicPool
   let ethPriceFeed: AggregatorV3Interface
+  let manager: OptionsManager
 
   beforeEach(async () => {
     await deployments.fixture()
@@ -39,19 +41,11 @@ describe("Facade", async () => {
     ethPriceFeed = (await ethers.getContract(
       "ETHPriceProvider",
     )) as AggregatorV3Interface
-    // USDCPool = (await ethers.getContract("HegicUSDCPool")) as HegicPool
-    // WBTCPool = (await ethers.getContract("HegicWBTCPool")) as HegicPool
+
     HegicATMCALL_WETH = (await ethers.getContract("HegicWETHCALL")) as HegicPool
     HegicATMPUT_WETH = (await ethers.getContract("HegicWETHPUT")) as HegicPool
-    // hegicStakingWBTC = (await ethers.getContract("WBTCStaking")) as HegicStaking
-    // hegicStakingUSDC = (await ethers.getContract("USDCStaking")) as HegicStaking
-    // priceCalculator = (await ethers.getContract(
-    //   "WBTCPriceCalculator",
-    // )) as PriceCalculator
-    // hegicOptions = (await ethers.getContract("WBTCOptions")) as HegicOptions
-    // fakeHegic = (await ethers.getContract("HEGIC")) as Erc20Mock
-    // fakeUSDC = (await ethers.getContract("USDC")) as Erc20Mock
-    // WBTC = (await ethers.getContract("WBTC")) as Erc20Mock
+    HegicATMPUT_WETH = (await ethers.getContract("HegicWETHPUT")) as HegicPool
+    manager = (await ethers.getContract("OptionsManager")) as OptionsManager
 
     await WETH.connect(alice).deposit({value: ethers.utils.parseUnits("100")})
 
@@ -254,6 +248,30 @@ describe("Facade", async () => {
         .provideEthToPool(HegicATMCALL_WETH.address, false, 0, {
           value: ethers.utils.parseEther("10"),
         })
+    })
+  })
+
+  describe("exercise (for GSN)", () => {
+    it("should exercise user's option", async () => {
+      await facade.provideEthToPool(HegicATMCALL_WETH.address, true, 0, {
+        value: ethers.utils.parseEther("10"),
+      })
+      await facade
+        .connect(alice)
+        .createOption(
+          HegicATMCALL_WETH.address,
+          24 * 3600,
+          ethers.utils.parseUnits("1"),
+          2500e8,
+          [USDC.address, WETH.address],
+          ethers.constants.MaxUint256,
+        )
+      await manager.connect(alice).setApprovalForAll(facade.address, true)
+      await ethPriceFeed.setPrice(3000e8)
+      await expect(facade.exercise(0)).to.be.revertedWith(
+        "Facade Error: _msgSender is not eligible to exercise the option",
+      )
+      await facade.connect(alice).exercise(0)
     })
   })
 })
