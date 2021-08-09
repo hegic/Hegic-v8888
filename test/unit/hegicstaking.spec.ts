@@ -54,7 +54,8 @@ describe("HegicStaking", async () => {
         ethers.utils.parseUnits("888000", await fakeHegic.decimals()),
       )
       expect(await hegicStaking.totalProfit()).to.be.eq(BN.from(0))
-      expect(await hegicStaking.lockupPeriod()).to.be.eq(BN.from(86400))
+      expect(await hegicStaking.classicLockupPeriod()).to.be.eq(BN.from(86400))
+      expect(await hegicStaking.microLockupPeriod()).to.be.eq(BN.from(86400))
       expect(
         await hegicStaking.lastBoughtTimestamp(ethers.constants.AddressZero),
       ).to.be.eq(BN.from(0))
