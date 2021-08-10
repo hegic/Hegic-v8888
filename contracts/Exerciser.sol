@@ -36,7 +36,7 @@ contract Exerciser {
 
     function exercise(uint256 optionId) external {
         IHegicPool pool = IHegicPool(optionsManager.tokenPool(optionId));
-        (, , , , , uint256 expired, , ) = pool.options(optionId);
+        (, , , , uint256 expired, , ) = pool.options(optionId);
         require(
             block.timestamp > expired - 30 minutes,
             "Facade Error: Automatically exercise for this option is not available yet"

@@ -67,7 +67,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
      * @param strike The option strike
      * @param amount The option size
      * @param lockedAmount The option collateral size locked
-     * @param created The option buy transaction timestamp
      * @param expired The option expiration timestamp
      * @param hedgePremium The share of the premium paid for hedging from the losses
      * @param unhedgePremium The share of the premium paid to the hedged liquidity provider
@@ -77,7 +76,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
         uint256 strike;
         uint256 amount;
         uint256 lockedAmount;
-        uint256 created;
         uint256 expired;
         uint256 hedgePremium;
         uint256 unhedgePremium;
@@ -218,7 +216,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
      * @return strike The option strike
      * @return amount The option size
      * @return lockedAmount The option collateral size locked
-     * @return created The option buy transaction timestamp
      * @return expired The option expiration timestamp
      * @return hedgePremium The share of the premium paid for hedging from the losses
      * @return unhedgePremium The share of the premium paid to the hedged liquidity provider
@@ -231,7 +228,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
             uint256 strike,
             uint256 amount,
             uint256 lockedAmount,
-            uint256 created,
             uint256 expired,
             uint256 hedgePremium,
             uint256 unhedgePremium
