@@ -10,7 +10,7 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   const {deploy, save, getArtifact} = deployments
   const {deployer} = await getNamedAccounts()
 
-  if (network.name == "ropsten") {
+  if (network.name == "ropsten" || network.name == "mainnet") {
     console.log(
       "UniswapRouter: ropsten(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D)",
     )
