@@ -144,7 +144,7 @@ contract Facade is Ownable {
         uint256 strike,
         address[] calldata swappath,
         uint256 acceptablePrice
-    ) external payable {
+    ) external {
         address buyer = _msgSender();
         (uint256 optionPrice, uint256 rawOptionPrice, , ) =
             getOptionPrice(pool, period, amount, strike, swappath);
@@ -236,5 +236,9 @@ contract Facade is Ownable {
             "Facade Error: _msgSender is not eligible to exercise the option"
         );
         IHegicPool(optionsManager.tokenPool(optionId)).exercise(optionId);
+    }
+
+    function versionRecipient() external pure returns (string memory) {
+        return "2.2.2";
     }
 }

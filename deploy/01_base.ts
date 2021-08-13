@@ -2,58 +2,27 @@ import {HardhatRuntimeEnvironment} from "hardhat/types"
 import {HegicPool} from "../typechain/HegicPool"
 import {OptionsManager} from "../typechain/OptionsManager"
 
+const ETHIVRate = 7e11
+const BTCIVRate = 5e11
+
 async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
-  const {deployments, getNamedAccounts, ethers} = hre
-  const {deploy} = deployments
+  const {deployments, getNamedAccounts, ethers, network} = hre
+  const {deploy, get} = deployments
   const {deployer} = await getNamedAccounts()
 
-  const HEGIC = await deploy("HEGIC", {
-    contract: "ERC20Mock",
-    from: deployer,
-    log: true,
-    args: ["HEGIC", "H", 18],
-  })
-
-  const USDC = await deploy("USDC", {
-    contract: "ERC20Mock",
-    from: deployer,
-    log: true,
-    args: ["USDC (Mock)", "USDC", 6],
-  })
-
-  const WETH = await deploy("WETH", {
-    contract: "WETHMock",
-    from: deployer,
-    log: true,
-  })
-
-  const WBTC = await deploy("WBTC", {
-    contract: "ERC20Mock",
-    from: deployer,
-    log: true,
-    args: ["WBTC (Mock)", "WBTC", 8],
-  })
-
-  const BTCPriceProvider = await deploy("WBTCPriceProvider", {
-    contract: "PriceProviderMock",
-    from: deployer,
-    log: true,
-    args: [50000e8],
-  })
-
-  const ETHPriceProvider = await deploy("ETHPriceProvider", {
-    contract: "PriceProviderMock",
-    from: deployer,
-    log: true,
-    args: [2500e8],
-  })
+  const HEGIC = await get("HEGIC")
+  const USDC = await get("USDC")
+  const WETH = await get("WETH")
+  const WBTC = await get("WBTC")
+  const BTCPriceProvider = await get("WBTCPriceProvider")
+  const ETHPriceProvider = await get("ETHPriceProvider")
 
   const OptionsManager = await deploy("OptionsManager", {
     from: deployer,
     log: true,
   })
 
-  const Exerciser = await deploy("Exerciser", {
+  await deploy("Exerciser", {
     from: deployer,
     log: true,
     args: [OptionsManager.address],
@@ -86,8 +55,8 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     log: true,
     args: [
       WETH.address,
-      "HegicAtmCall_WETH",
-      "hEAC",
+      "Hegic ETH ATM Calls Pool",
+      "ETHCALLSPOOL",
       OptionsManager.address,
       ethers.constants.AddressZero,
       WETHStaking.address,
@@ -101,8 +70,8 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     log: true,
     args: [
       USDC.address,
-      "HegicAtmPut_WETH",
-      "hEAP",
+      "Hegic ETH ATM Puts Pool",
+      "ETHPUTSPOOL",
       OptionsManager.address,
       ethers.constants.AddressZero,
       USDCStaking.address,
@@ -117,8 +86,8 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     log: true,
     args: [
       WBTC.address,
-      "HegicAtmCall_WBTC",
-      "hWAC",
+      "Hegic WBTC ATM Calls Pool",
+      "WBTCCALLSPOOL",
       OptionsManager.address,
       ethers.constants.AddressZero,
       WBTCStaking.address,
@@ -132,8 +101,8 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     log: true,
     args: [
       USDC.address,
-      "HegicAtmPut_WBTC",
-      "hWAP",
+      "Hegic WBTC ATM Puts Pool",
+      "WBTCPUTSPOOL",
       OptionsManager.address,
       ethers.constants.AddressZero,
       USDCStaking.address,
@@ -146,28 +115,28 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
     contract: "PriceCalculator",
     from: deployer,
     log: true,
-    args: [1e13, ETHPriceProvider.address, HegicAtmCall_WETH.address],
+    args: [ETHIVRate, ETHPriceProvider.address, HegicAtmCall_WETH.address],
   })
 
   const WETHPUTPricer = await deploy("ETHPutPriceCalculator", {
     contract: "PriceCalculator",
     from: deployer,
     log: true,
-    args: [1e13, ETHPriceProvider.address, HegicAtmPut_WETH.address],
+    args: [ETHIVRate, ETHPriceProvider.address, HegicAtmPut_WETH.address],
   })
 
   const WBTCCALLPricer = await deploy("BTCCallPriceCalculator", {
     contract: "PriceCalculator",
     from: deployer,
     log: true,
-    args: [1e13, BTCPriceProvider.address, HegicAtmCall_WBTC.address],
+    args: [BTCIVRate, BTCPriceProvider.address, HegicAtmCall_WBTC.address],
   })
 
   const WBTCPUTPricer = await deploy("BTCPutPriceCalculator", {
     contract: "PriceCalculator",
     from: deployer,
     log: true,
-    args: [1e13, BTCPriceProvider.address, HegicAtmPut_WBTC.address],
+    args: [BTCIVRate, BTCPriceProvider.address, HegicAtmPut_WBTC.address],
   })
 
   const HegicAtmCall_WETHInstance = (await ethers.getContract(
