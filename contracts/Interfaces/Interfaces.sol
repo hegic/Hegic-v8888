@@ -23,7 +23,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@chainlink/contracts/src/v0.7/interfaces/AggregatorV3Interface.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router01.sol";
 
@@ -68,7 +67,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
      * @param strike The option strike
      * @param amount The option size
      * @param lockedAmount The option collateral size locked
-     * @param created The option buy transaction timestamp
      * @param expired The option expiration timestamp
      * @param hedgePremium The share of the premium paid for hedging from the losses
      * @param unhedgePremium The share of the premium paid to the hedged liquidity provider
@@ -78,7 +76,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
         uint256 strike;
         uint256 amount;
         uint256 lockedAmount;
-        uint256 created;
         uint256 expired;
         uint256 hedgePremium;
         uint256 unhedgePremium;
@@ -219,7 +216,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
      * @return strike The option strike
      * @return amount The option size
      * @return lockedAmount The option collateral size locked
-     * @return created The option buy transaction timestamp
      * @return expired The option expiration timestamp
      * @return hedgePremium The share of the premium paid for hedging from the losses
      * @return unhedgePremium The share of the premium paid to the hedged liquidity provider
@@ -232,7 +228,6 @@ interface IHegicPool is IERC721, IPriceCalculator {
             uint256 strike,
             uint256 amount,
             uint256 lockedAmount,
-            uint256 created,
             uint256 expired,
             uint256 hedgePremium,
             uint256 unhedgePremium
@@ -276,7 +271,7 @@ interface IHegicStaking {
 
     function sellStakingLot(uint256 amount) external;
 
-    function sendProfits(uint256 amount) external;
+    function distributeUnrealizedRewards() external;
 
     function profitOf(address account) external view returns (uint256);
 }

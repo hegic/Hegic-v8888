@@ -23,6 +23,7 @@ import "../Interfaces/Interfaces.sol";
 import "../Interfaces/IOptionsManager.sol";
 import "../Interfaces/Interfaces.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @author 0mllwntrmt3
@@ -33,7 +34,12 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * exercises the ITM (in-the-money) options with the unrealized P&L and settles them,
  * unlocks the expired options and distributes the premiums among the liquidity providers.
  **/
-abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
+abstract contract HegicPool is
+    IHegicPool,
+    ERC721,
+    AccessControl,
+    ReentrancyGuard
+{
     using SafeERC20 for IERC20;
 
     uint256 public constant INITIAL_RATE = 1e20;
@@ -76,7 +82,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
         token = _token;
         hedgePool = _msgSender();
         optionsManager = manager;
-        approve();
     }
 
     /**
@@ -189,16 +194,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
     }
 
     /**
-     * @notice Used for approving the staking contracts
-     * to receive the `settlementFee` in ERC20 tokens
-     * that will be accumulated and distributed in
-     * staking rewards among the staking participants.
-     **/
-    function approve() public {
-        token.approve(address(settlementFeeRecipient), type(uint256).max);
-    }
-
-    /**
      * @notice Used for changing the hedging pool address
      * that will be accumulating the hedging premiums paid
      * as a share of the total premium redirected to this address.
@@ -256,7 +251,6 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
             strike,
             amount,
             amountToBeLocked,
-            block.timestamp,
             block.timestamp + period,
             hedgePremium,
             unhedgePremium
@@ -267,8 +261,8 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
             address(this),
             premium + settlementFee
         );
-
-        settlementFeeRecipient.sendProfits(settlementFee);
+        token.safeTransfer(address(settlementFeeRecipient), settlementFee);
+        settlementFeeRecipient.distributeUnrealizedRewards();
         if (hedgeFee > 0) token.safeTransfer(hedgePool, hedgeFee);
         emit Acquired(id, settlementFee, premium);
     }
@@ -374,7 +368,7 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
         uint256 amount,
         bool hedged,
         uint256 minShare
-    ) external override returns (uint256 share) {
+    ) external override nonReentrant returns (uint256 share) {
         uint256 totalShare = hedged ? hedgedShare : unhedgedShare;
         uint256 balance = hedged ? hedgedBalance : unhedgedBalance;
         share = totalShare > 0 && balance > 0
@@ -418,6 +412,7 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
     function withdraw(uint256 trancheID)
         external
         override
+        nonReentrant
         returns (uint256 amount)
     {
         address owner = ownerOf(trancheID);
@@ -443,6 +438,7 @@ abstract contract HegicPool is IHegicPool, ERC721, AccessControl {
     function withdrawWithoutHedge(uint256 trancheID)
         external
         override
+        nonReentrant
         returns (uint256 amount)
     {
         address owner = ownerOf(trancheID);

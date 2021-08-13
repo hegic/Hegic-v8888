@@ -35,15 +35,13 @@ import "../Interfaces/Interfaces.sol";
 
 contract HegicStaking is ERC20, IHegicStaking {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
 
     IERC20 public immutable HEGIC;
     IERC20 public immutable token;
 
     uint256 public constant STAKING_LOT_PRICE = 888_000e18;
     uint256 internal constant ACCURACY = 1e30;
-
-    address public immutable FALLBACK_RECIPIENT;
+    uint256 internal realisedBalance;
 
     uint256 public microLotsTotal = 0;
     mapping(address => uint256) public microBalance;
@@ -56,8 +54,11 @@ contract HegicStaking is ERC20, IHegicStaking {
 
     mapping(address => uint256) internal savedProfit;
 
-    uint256 public lockupPeriod = 1 days;
+    uint256 public classicLockupPeriod = 1 days;
+    uint256 public microLockupPeriod = 1 days;
+
     mapping(address => uint256) public lastBoughtTimestamp;
+    mapping(address => uint256) public lastMicroBoughtTimestamp;
     mapping(address => bool) public _revertTransfersInLockUpPeriod;
 
     constructor(
@@ -68,7 +69,6 @@ contract HegicStaking is ERC20, IHegicStaking {
     ) ERC20(name, short) {
         HEGIC = _hegic;
         token = _token;
-        FALLBACK_RECIPIENT = msg.sender;
     }
 
     function decimals() public pure override returns (uint8) {
@@ -89,6 +89,7 @@ contract HegicStaking is ERC20, IHegicStaking {
         profit = savedProfit[account];
         require(profit > 0, "Zero profit");
         savedProfit[account] = 0;
+        realisedBalance -= profit;
         token.safeTransfer(account, profit);
         emit Claim(account, profit);
     }
@@ -102,7 +103,7 @@ contract HegicStaking is ERC20, IHegicStaking {
     function buyMicroLot(uint256 amount) external {
         require(amount > 0, "Amount is zero");
         saveProfits(msg.sender);
-        lastBoughtTimestamp[msg.sender] = block.timestamp;
+        lastMicroBoughtTimestamp[msg.sender] = block.timestamp;
         microLotsTotal += amount;
         microBalance[msg.sender] += amount;
         HEGIC.safeTransferFrom(msg.sender, address(this), amount);
@@ -113,12 +114,17 @@ contract HegicStaking is ERC20, IHegicStaking {
      * @notice Used for unstaking the HEGIC tokens
      * in the form of selling the microlot.
      **/
-    function sellMicroLot(uint256 amount) external lockupFree {
+    function sellMicroLot(uint256 amount) external {
         require(amount > 0, "Amount is zero");
+        require(
+            lastMicroBoughtTimestamp[msg.sender] + microLockupPeriod <
+                block.timestamp,
+            "The action is suspended due to the lockup"
+        );
         saveProfits(msg.sender);
         microLotsTotal -= amount;
         microBalance[msg.sender] -= amount;
-        HEGIC.safeTransferFrom(msg.sender, address(this), amount);
+        HEGIC.safeTransfer(msg.sender, amount);
         emit MicroLotsSold(msg.sender, amount);
     }
 
@@ -135,7 +141,7 @@ contract HegicStaking is ERC20, IHegicStaking {
         HEGIC.safeTransferFrom(
             msg.sender,
             address(this),
-            amount.mul(STAKING_LOT_PRICE)
+            amount * STAKING_LOT_PRICE
         );
     }
 
@@ -145,7 +151,7 @@ contract HegicStaking is ERC20, IHegicStaking {
      **/
     function sellStakingLot(uint256 amount) external override lockupFree {
         _burn(msg.sender, amount);
-        HEGIC.safeTransfer(msg.sender, amount.mul(STAKING_LOT_PRICE));
+        HEGIC.safeTransfer(msg.sender, amount * STAKING_LOT_PRICE);
     }
 
     function revertTransfersInLockUpPeriod(bool value) external {
@@ -207,7 +213,7 @@ contract HegicStaking is ERC20, IHegicStaking {
         if (from != address(0)) saveProfits(from);
         if (to != address(0)) saveProfits(to);
         if (
-            lastBoughtTimestamp[from].add(lockupPeriod) > block.timestamp &&
+            lastBoughtTimestamp[from] + classicLockupPeriod > block.timestamp &&
             lastBoughtTimestamp[from] > lastBoughtTimestamp[to]
         ) {
             require(
@@ -219,11 +225,12 @@ contract HegicStaking is ERC20, IHegicStaking {
     }
 
     /**
-     * @notice Used for sending the staking rewards (the settlement fees)
-     * into the staking contract for the future distribution
+     * @notice Used for distributing the staking rewards
      * among the microlots and staking lots holders.
      **/
-    function sendProfits(uint256 amount) external override {
+    function distributeUnrealizedRewards() external override {
+        uint256 amount = token.balanceOf(address(this)) - realisedBalance;
+        realisedBalance += amount;
         uint256 _totalSupply = totalSupply();
         if (microLotsTotal + _totalSupply > 0) {
             if (microLotsTotal == 0) {
@@ -236,17 +243,13 @@ contract HegicStaking is ERC20, IHegicStaking {
                 microLotsProfits += (microAmount * ACCURACY) / microLotsTotal;
                 totalProfit += (baseAmount * ACCURACY) / _totalSupply;
             }
-
-            token.safeTransferFrom(msg.sender, address(this), amount);
             emit Profit(amount);
-        } else {
-            token.safeTransferFrom(msg.sender, FALLBACK_RECIPIENT, amount);
         }
     }
 
     modifier lockupFree {
         require(
-            lastBoughtTimestamp[msg.sender].add(lockupPeriod) <=
+            lastBoughtTimestamp[msg.sender] + classicLockupPeriod <=
                 block.timestamp,
             "The action is suspended due to the lockup"
         );

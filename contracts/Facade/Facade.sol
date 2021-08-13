@@ -20,6 +20,7 @@ pragma solidity 0.8.6;
  **/
 
 import "../Interfaces/Interfaces.sol";
+import "../Interfaces/IOptionsManager.sol";
 
 /**
  * @author 0mllwntrmt3
@@ -35,16 +36,19 @@ contract Facade is Ownable {
 
     IWETH public immutable WETH;
     IUniswapV2Router01 public immutable exchange;
+    IOptionsManager public immutable optionsManager;
     address public _trustedForwarder;
 
     constructor(
         IWETH weth,
         IUniswapV2Router01 router,
+        IOptionsManager manager,
         address trustedForwarder
     ) {
         WETH = weth;
         exchange = router;
         _trustedForwarder = trustedForwarder;
+        optionsManager = manager;
     }
 
     /**
@@ -120,7 +124,8 @@ contract Facade is Ownable {
      * @notice Used for approving the pools contracts addresses.
      **/
     function poolApprove(IHegicPool pool) external {
-        pool.token().approve(address(pool), type(uint256).max);
+        pool.token().safeApprove(address(pool), 0);
+        pool.token().safeApprove(address(pool), type(uint256).max);
     }
 
     /**
@@ -130,24 +135,33 @@ contract Facade is Ownable {
      * @param period The option period
      * @param amount The option size
      * @param strike The option strike
+     * @param acceptablePrice The highest acceptable price
      **/
     function createOption(
         IHegicPool pool,
         uint256 period,
         uint256 amount,
         uint256 strike,
-        address[] calldata swappath
+        address[] calldata swappath,
+        uint256 acceptablePrice
     ) external payable {
         address buyer = _msgSender();
         (uint256 optionPrice, uint256 rawOptionPrice, , ) =
             getOptionPrice(pool, period, amount, strike, swappath);
+        require(
+            optionPrice <= acceptablePrice,
+            "Facade Error: The option price is too high"
+        );
         IERC20 paymentToken = IERC20(swappath[0]);
         paymentToken.safeTransferFrom(buyer, address(this), optionPrice);
         if (swappath.length > 1) {
             if (
                 paymentToken.allowance(address(this), address(exchange)) <
                 optionPrice
-            ) paymentToken.approve(address(exchange), type(uint256).max);
+            ) {
+                paymentToken.safeApprove(address(exchange), 0);
+                paymentToken.safeApprove(address(exchange), type(uint256).max);
+            }
 
             exchange.swapTokensForExactTokens(
                 rawOptionPrice,
@@ -214,5 +228,13 @@ contract Facade is Ownable {
                 signer := shr(96, calldataload(sub(calldatasize(), 20)))
             }
         }
+    }
+
+    function exercise(uint256 optionId) external {
+        require(
+            optionsManager.isApprovedOrOwner(_msgSender(), optionId),
+            "Facade Error: _msgSender is not eligible to exercise the option"
+        );
+        IHegicPool(optionsManager.tokenPool(optionId)).exercise(optionId);
     }
 }

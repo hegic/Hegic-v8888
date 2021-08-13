@@ -6,51 +6,50 @@ async function deployment(hre: HardhatRuntimeEnvironment): Promise<void> {
   const {deployer} = await getNamedAccounts()
 
   const WETH = await get("WETH")
-  const WBTC = await get("WBTC")
-  const USDC = await get("USDC")
-
-  const WBTCPriceProvider = await get("WBTCPriceProvider")
-  const ETHPriceProvider = await get("ETHPriceProvider")
-
+  const OptionsManager = await get("OptionsManager")
   const uniswapRouter = await get("UniswapRouter")
 
   await deploy("Facade", {
     from: deployer,
+    log: true,
     args: [
       WETH.address,
       uniswapRouter.address,
-      "0x0000000000000000000000000000000000000000",
+      OptionsManager.address,
+      "0xeB230bF62267E94e657b5cbE74bdcea78EB3a5AB",
     ],
   })
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWETHPUT")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWETHCALL")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWBTCPUT")).address,
   )
 
   await execute(
     "Facade",
-    {from: deployer},
+    {from: deployer, log: true},
     "poolApprove",
     (await get("HegicWBTCCALL")).address,
   )
 }
 
-deployment.tags = ["test"]
+deployment.tags = ["test", "facade"]
+deployment.dependencies = ["uni"]
+
 export default deployment
